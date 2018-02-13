@@ -31,11 +31,11 @@ class Event {
 
     // operators
 
-    bool operator < (const Event& rhs) { return time_ < rhs.get_time(); }
-    bool operator > (const Event& rhs) { return time_ > rhs.get_time(); }
-    bool operator <= (const Event& rhs) { return time_ <= rhs.get_time(); }
-    bool operator >= (const Event& rhs) { return time_ >= rhs.get_time(); }
-    bool operator == (const Event& rhs) { return time_ == rhs.get_time(); }
+    inline bool operator < (const Event& rhs) const { return time_ < rhs.get_time(); }
+    inline bool operator > (const Event& rhs) const { return time_ > rhs.get_time(); }
+    inline bool operator <= (const Event& rhs) const { return time_ <= rhs.get_time(); }
+    inline bool operator >= (const Event& rhs) const { return time_ >= rhs.get_time(); }
+    inline bool operator == (const Event& rhs) const { return time_ == rhs.get_time(); }
 };
 
 #endif
