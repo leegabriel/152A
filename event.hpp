@@ -18,7 +18,7 @@ class Event {
     // getters
 
     bool get_type () { return type_; }
-    int get_time () { return time_; }
+    int get_time () const { return time_; } // needs to be const for operators
     Event* get_next () { return next_; }
     Event* get_prev () { return prev_; }
 
@@ -28,6 +28,14 @@ class Event {
     void set_time (int time) { time_ = time; }
     void set_next (Event* next) { next_ = next; }
     void set_prev (Event* prev) { prev_ = prev; }
+
+    // operators
+
+    bool operator < (const Event& rhs) { return time_ < rhs.get_time(); }
+    bool operator > (const Event& rhs) { return time_ > rhs.get_time(); }
+    bool operator <= (const Event& rhs) { return time_ <= rhs.get_time(); }
+    bool operator >= (const Event& rhs) { return time_ >= rhs.get_time(); }
+    bool operator == (const Event& rhs) { return time_ == rhs.get_time(); }
 };
 
 #endif
