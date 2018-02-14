@@ -5,18 +5,34 @@
 #include <math.h>
 #include <random>
 #include "event.hpp"
-
-#define MAX_BUFFER_SIZE 20
-#define LAMBDA 0.2
-#define MU 1.0
+#include "packet.hpp"
 
 using namespace std;
 
+const int MAX_BUFFER_SIZE = 20;
+const float LAMBDA = 0.2;
+const float MU = 1.0;
+
 int g_time;
-int g_length;
+int g_length; // total number of packets in system (buffer + server)
 
 priority_queue<Event, vector<Event>, greater<Event>> gel;
-queue<Event> buffer();
+queue<Packet> buffer;
+
+void print_buffer () {
+  queue<Packet> tmp(buffer);
+  cout << "Buffer contents: {";
+  Packet p = tmp.front();
+  p.print();
+  tmp.pop();
+  while (!tmp.empty()) {
+    Packet p = tmp.front();
+    cout << ", ";
+    p.print();
+    tmp.pop();
+  }
+  cout << "}" << endl;
+}
 
 int negative_exponential (float rate) {
   // TODO: implement properly
@@ -29,23 +45,23 @@ int negative_exponential (float rate) {
 void init () {
   cout << "Initializing" << endl;
   g_time = 0;
-  g_length = 0;
+  g_length = 15; // set to >= 1 to make server busy initially
   int t = g_time + negative_exponential(LAMBDA);
   Event first(1, t , NULL, NULL); // first arrival event
   cout << "First event: ";
   first.print(); 
   cout << endl;
   gel.push(first);
-  cout << "Done initializing" << endl;
+  cout << "Done initializing" << "\n\n";
 }
 
 void process_arrival_event (Event a) {
   int save = g_time;
   g_time = a.get_time();
-  cout << "Processing arrival event. Advancing time from ";
+  cout << "Advancing time from ";
   cout << save << " to " << g_time << endl;
   Event next_arrival(1, g_time + negative_exponential(LAMBDA), NULL, NULL);
-  cout << "Generated next event: ";
+  cout << "Generated next arrival event: ";
   next_arrival.print(); 
   cout << endl;
   gel.push(next_arrival);
@@ -56,18 +72,22 @@ void process_arrival_event (Event a) {
   //   Event* depart_event = (0, g_time + service_time, NULL, NULL);
   //   gel.push(depart_event);
   // }
-  // // server is busy
-  // else if (g_length > 0) {
-  //   if (g_length - 1 < MAX_BUFFER_SIZE) {
-
-  //   }
-  //   else {
-  //     // buffer is full
-  //     cout << "Packet drop" << endl;
-  //   }
-  //   g_length++;
-  //   update_statistics();
-  // }
+  // server is busy
+  if (g_length > 0) {
+    cout << "Server busy. ";
+    if (g_length - 1 < MAX_BUFFER_SIZE) {
+      // buffer not full, queue the packet
+      cout << "Buffer not full, queuing packet.";
+      Packet p(10);
+      buffer.push(p);
+      g_length++;
+    }
+    else {
+      cout << "Buffer is full, dropping packet.";
+    }
+  }
+  cout << "\n\n"; // done processing
+  // print_buffer();
 }
 
 void process_departure_event (Event d) {
@@ -103,12 +123,8 @@ void test () {
 
   while (!gel.empty()) {
     Event e = gel.top();
-    cout << "{ ";
-    cout << e.get_type() << " ";
-    cout << e.get_time() << " ";
-    cout << e.get_next() << " ";
-    cout << e.get_prev() << " ";
-    cout << "}" << endl;
+    e.print();
+    cout << endl;
     gel.pop();
   }
 }
@@ -120,6 +136,9 @@ int main (int argc, char* argv[]) {
   while (i < 10) {
     Event e = gel.top();
     gel.pop();
+    cout << "Processing ";
+    e.print();
+    cout << ". ";
     // arrival = 1, departure = 0
     if (e.get_type()) {
       process_arrival_event(e);

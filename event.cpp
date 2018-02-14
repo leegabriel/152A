@@ -14,11 +14,11 @@ Event::~Event () {
 }
 
 void Event::print () {
-  cout << "{ ";
-  cout << type_ << " ";
-  cout << time_ << " ";
-  cout << next_ << " ";
-  cout << prev_ << " ";
-  cout << "}";
+  cout << "Event(";
+  cout << type_ << ", ";
+  cout << time_ << ", ";
+  cout << next_ << ", ";
+  cout << prev_;
+  cout << ")";
 }
 
