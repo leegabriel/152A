@@ -60,7 +60,7 @@ void process_arrival_event (Event a) {
   int save = g_time;
   g_time = a.get_time();
   cout << "Advancing time from ";
-  cout << save << " to " << g_time << endl;
+  cout << save << " to " << g_time << "." << endl;
 
   // create new packet, generate its intrinsic service time
   Packet p(negative_exponential(MU)); 
@@ -74,45 +74,49 @@ void process_arrival_event (Event a) {
 
   // server is free
   if (g_length == 0) {
+    cout << "Server free. Processing packet. ";
     int service_time = p.get_service_time();
     Event depart_event(0, g_time + service_time, NULL, NULL);
     cout << "Generated departure event: ";
     depart_event.print(); 
     cout << endl;
     gel.push(depart_event);
+    g_length++;
   }
   // server is busy
   else if (g_length > 0) {
     cout << "Server busy. ";
     if (g_length - 1 < MAX_BUFFER_SIZE) {
       // buffer not full, queue the packet
-      cout << "Buffer not full, queuing packet.";
+      cout << "Buffer not full, queuing packet." << endl;
       buffer.push(p);
       g_length++;
     }
     else {
-      cout << "Buffer is full, dropping packet.";
+      cout << "Buffer is full, dropping packet." << endl;
     }
   }
-  cout << "\n\n"; // done processing
 }
 
 void process_departure_event (Event d) {
   int save = g_time;
   g_time = d.get_time();
   cout << "Advancing time from ";
-  cout << save << " to " << g_time << endl;
+  cout << save << " to " << g_time << "." << endl;
+  g_length--; // packet is leaving system
   // if buffer not empty
   if (g_length > 0) {
     Packet p = buffer.front(); 
     buffer.pop(); // dequeue packet
-    g_length--;
     // next depart time is current time + time to transmit this dequeued packet
     Event depart_event(0, g_time + p.get_service_time(), NULL, NULL);
     cout << "Generated departure event: ";
     depart_event.print(); 
     cout << endl;
     gel.push(depart_event);
+  } 
+  else {
+    cout << "Buffer is empty. Taking no action." << endl;
   }
 }
 
@@ -163,7 +167,9 @@ int main (int argc, char* argv[]) {
       process_departure_event(e);
     }
     i++;
-    cout << buffer.size() << endl;
+    cout << "buffer.size(): " << buffer.size() << endl;
+    cout << "g_length: " << g_length << endl;
+    cout << "\n\n";
   }
   // test();
   cout << "\n\nFinished going through global event list" << "\n\n";
