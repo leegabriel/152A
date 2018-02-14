@@ -31,17 +31,23 @@ void init () {
   g_time = 0;
   g_length = 0;
   int t = g_time + negative_exponential(LAMBDA);
-  cout << "Generated time: " << t << endl;
-  Event first_arrival(1, t , NULL, NULL); // first arrival event
-  gel.push(first_arrival);
-  cout << "Pushed first arrival event" << endl;
+  Event first(1, t , NULL, NULL); // first arrival event
+  cout << "First event: ";
+  first.print(); 
+  cout << endl;
+  gel.push(first);
   cout << "Done initializing" << endl;
 }
 
 void process_arrival_event (Event a) {
-  cout << "Processing arrival event. Time: " << g_time << endl;
+  int save = g_time;
   g_time = a.get_time();
+  cout << "Processing arrival event. Advancing time from ";
+  cout << save << " to " << g_time << endl;
   Event next_arrival(1, g_time + negative_exponential(LAMBDA), NULL, NULL);
+  cout << "Generated next event: ";
+  next_arrival.print(); 
+  cout << endl;
   gel.push(next_arrival);
 
   // // server is free
@@ -109,6 +115,7 @@ void test () {
 
 int main (int argc, char* argv[]) {
   init();
+  cout << "Going through global event list" << endl;
   int i = 0;
   while (i < 10) {
     Event e = gel.top();
@@ -123,6 +130,7 @@ int main (int argc, char* argv[]) {
     i++;
   }
   // test();
+  cout << "Finished going through global event list" << endl;
   output_statistics();
   return 0;
 }

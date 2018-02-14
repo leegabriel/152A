@@ -36,6 +36,8 @@ class Event {
     inline bool operator <= (const Event& rhs) const { return time_ <= rhs.get_time(); }
     inline bool operator >= (const Event& rhs) const { return time_ >= rhs.get_time(); }
     inline bool operator == (const Event& rhs) const { return time_ == rhs.get_time(); }
+
+    void print ();
 };
 
 #endif
