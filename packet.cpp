@@ -3,11 +3,11 @@
 
 using namespace std;
 
-Packet::Packet (int time) : time_(time) {}
+Packet::Packet (int st) : service_time_(st) {}
 
 Packet::~Packet () {}
 
 void Packet::print () {
-  cout << "Packet(" << time_ << ")";
+  cout << "Packet(" << service_time_ << ")";
 }
 

@@ -5,11 +5,13 @@
 
 class Packet {
   private:
-    int time_; // when packet arrives to xmitter or server finishes xmitting
+    int service_time_; // the packet's intrinsic service time
 
   public:
-    Packet (int time);
+    Packet (int st);
     ~Packet ();
+
+    int get_service_time () { return service_time_; }
 
     void print ();
 };

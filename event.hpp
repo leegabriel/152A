@@ -7,7 +7,7 @@ class Event {
   private:
     // will be initialized in this order
     bool type_; // arrival = 1, departure = 0
-    int time_; // when packet arrives to xmitter or server finishes xmitting
+    int time_; // absolute time when packet arrives/departs from system
     Event* next_;
     Event* prev_;
 
