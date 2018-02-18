@@ -1,24 +1,17 @@
 #include <iostream>
+#include <string>
 #include "event.hpp"
 
 using namespace std;
 
-Event::Event (bool type, int time, Event* next, Event* prev) 
-  : type_(type), time_(time), next_(next), prev_(prev) {
-}
-
-Event::~Event () {
-  // destructor will get called multiple times if program makes copies
-  // it will also be destroyed when out of scope using this syntax: 
-  // Event e(1, 1, NULL, NULL);
-}
-
-void Event::print () {
-  cout << "Event(";
-  cout << type_ << ", ";
-  cout << time_ << ", ";
-  cout << next_ << ", ";
-  cout << prev_;
-  cout << ")";
+Event::Event (bool type, double time) : type_(type), time_(time) {}
+Event::~Event () {}
+string Event::details () { 
+  string s = "Event(";
+  s += to_string(type_);
+  s += ", ";
+  s += to_string(time_);
+  s += ")";
+  return s; 
 }
 

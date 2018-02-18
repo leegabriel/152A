@@ -2,18 +2,18 @@
 #define PACKET_HPP
 
 #include <iostream>
+#include <string>
+
+using namespace std;
 
 class Packet {
   private:
-    int service_time_; // the packet's intrinsic service time
-
+    double service_time_; // intrinsic service time
   public:
-    Packet (int st);
+    Packet (double st);
     ~Packet ();
-
-    int get_service_time () { return service_time_; }
-
-    void print ();
+    double get_service_time () { return service_time_; }
+    string details ();
 };
 
 #endif

@@ -2,138 +2,142 @@
 #include <queue>
 #include <functional>
 #include <stdlib.h>
-#include <math.h>
 #include <random>
+#include <math.h>
 #include "event.hpp"
 #include "packet.hpp"
 
 using namespace std;
 
-const int MAX_BUFFER_SIZE = 10;
-const float LAMBDA = 0.2;
-const float MU = 1.0;
+const int NUM_EVENTS = 100000; // number of events to process 
+const int NO_CUSTOM = -1; 
+const int MAX_BUFFER_SIZE = 10; // maximum buffer size
+const double LAMBDA = 0.2; // arrival rate in pkts/sec
+const double MU = 1.0; // departure rate in pkts/sec
 
-int g_time;
+// simulation variables
+
+double g_time; // absolute system time
 int g_length; // total number of packets in system (buffer + server)
+priority_queue<Event, vector<Event>, greater<Event>> gel; // global event list
+queue<Packet> buffer; // queue for link processor
 
-priority_queue<Event, vector<Event>, greater<Event>> gel;
-queue<Packet> buffer;
+// statistical variables
 
-void print_buffer () {
-  queue<Packet> tmp(buffer);
-  cout << "Buffer contents: {";
-  Packet p = tmp.front();
-  p.print();
-  tmp.pop();
-  while (!tmp.empty()) {
-    Packet p = tmp.front();
-    cout << ", ";
-    p.print();
-    tmp.pop();
-  }
-  cout << "}" << endl;
-}
+int g_queue_length_sum; // sum of queue lengths 
+bool g_server_free;
+double g_last_free_time;
+double g_free_time_sum;
+int g_pkts_dropped; 
 
-int negative_exponential (float rate) {
-  // TODO: implement properly
+double negative_exponential (double rate) {
   mt19937 rng;
   rng.seed(random_device()());
-  uniform_int_distribution<mt19937::result_type> dist100(0,100); 
-  return dist100(rng);
+  uniform_real_distribution<double> distribution(0.0,1.0);
+  double u = distribution(rng);
+  return (((-1 / rate) * log(1 - u)));
+}
+
+void advance_system_time (Event e) {
+  double old = g_time;
+  g_time = e.get_time(); 
+  cout << "Advancing time from ";
+  cout << old << " to " << g_time << endl;
+}
+
+Event generate_event (bool type, double custom) {
+  double ist; // intrinsic service time
+  if (custom != NO_CUSTOM) { ist = custom; } // user-defined ist
+  else { ist = type ? negative_exponential(LAMBDA) : negative_exponential(MU); }
+  Event e(type, g_time + ist);
+  cout << "New event: " << e.details() << endl;
+  return e;
 }
 
 void init () {
   cout << "Initializing" << endl;
-  g_time = 0;
-  g_length = 0; // set to >= 1 to make server busy initially
-  int t = g_time + negative_exponential(LAMBDA);
-  Event first(1, t, NULL, NULL); // first arrival event
-  cout << "First event: ";
-  first.print(); 
-  cout << endl;
-  gel.push(first);
+  g_time = 0.0, g_length = 0, g_queue_length_sum = 0, g_last_free_time = 0.0,
+    g_free_time_sum = 0.0, g_pkts_dropped = 0;
+  g_server_free = false; // system not started, starts on first arrival event
+  Event first = generate_event(1, NO_CUSTOM); // generate first arrival event
+  gel.push(first); // push first arrival event to start simulation
   cout << "Done initializing" << "\n\n";
 }
 
 void process_arrival_event (Event a) {
-  // advance simulation time
-  int save = g_time;
-  g_time = a.get_time();
-  cout << "Advancing time from ";
-  cout << save << " to " << g_time << "." << endl;
+  advance_system_time(a);
+  Packet packet(negative_exponential(MU)); // create new packet
 
-  // create new packet, generate its intrinsic service time
-  Packet p(negative_exponential(MU)); 
-
-  // create next arrival event, generate its absolute arrival time
-  Event next_arrival(1, g_time + negative_exponential(LAMBDA), NULL, NULL);
-  cout << "Generated next arrival event: ";
-  next_arrival.print(); 
-  cout << endl;
+  Event next_arrival = generate_event(1, NO_CUSTOM); 
   gel.push(next_arrival);
 
-  // server is free
-  if (g_length == 0) {
-    cout << "Server free. Processing packet. ";
-    int service_time = p.get_service_time();
-    Event depart_event(0, g_time + service_time, NULL, NULL);
-    cout << "Generated departure event: ";
-    depart_event.print(); 
-    cout << endl;
+  if (g_length == 0) { // server free
+    cout << "Server free, will now process this packet" << endl;
+    Event depart_event = generate_event(0, packet.get_service_time());
     gel.push(depart_event);
-    g_length++;
+    g_length = 1; // 1 packet in system, being processed in server
   }
-  // server is busy
-  else if (g_length > 0) {
+  else if (g_length > 0) { // server busy
     cout << "Server busy. ";
-    if (g_length - 1 < MAX_BUFFER_SIZE) {
-      // buffer not full, queue the packet
-      cout << "Buffer not full, queuing packet." << endl;
-      buffer.push(p);
-      g_length++;
+    if (g_length - 1 < MAX_BUFFER_SIZE) { // buffer not full
+      cout << "Buffer NOT full, queuing packet" << endl;
+      buffer.push(packet); 
+      g_length++; // 1 more packet in system (in buffer)
     }
-    else {
-      cout << "Buffer is full, dropping packet." << endl;
+    else { // buffer full
+      cout << "Buffer full, dropping packet" << endl;
+      g_pkts_dropped++;
     }
   }
+  g_server_free = false; // server is processing
 }
 
 void process_departure_event (Event d) {
-  int save = g_time;
-  g_time = d.get_time();
-  cout << "Advancing time from ";
-  cout << save << " to " << g_time << "." << endl;
-  g_length--; // packet is leaving system
-  // if buffer not empty
-  if (g_length > 0) {
-    Packet p = buffer.front(); 
+  advance_system_time(d);
+  g_length--; // packet is out of system now
+  cout << "Server done processing packet" << endl;
+  if (g_length > 0) { // buffer not empty
+    cout << "Buffer NOT empty, processing next packet" << endl;
+    Packet packet = buffer.front(); 
     buffer.pop(); // dequeue packet
-    // next depart time is current time + time to transmit this dequeued packet
-    Event depart_event(0, g_time + p.get_service_time(), NULL, NULL);
-    cout << "Generated departure event: ";
-    depart_event.print(); 
-    cout << endl;
+    Event depart_event = generate_event(0, packet.get_service_time());
     gel.push(depart_event);
+    g_server_free = false; // server is processing
   } 
-  else {
-    cout << "Buffer is empty. Taking no action." << endl;
+  else { // buffer empty
+    cout << "Buffer empty, taking no action" << endl; 
+    g_server_free = true; // server is idle
   }
 }
 
 void update_statistics () {
-  // TODO: implement properly
-  cout << "Update statistics" << endl;
+  cout << "Updating statistics" << "\n\n";
+  g_queue_length_sum += buffer.size();
+  if (g_server_free) {
+    double save = g_last_free_time;
+    g_last_free_time = g_time;
+    g_free_time_sum += g_last_free_time - save;
+  }
 }
 
 void output_statistics () {
-  // TODO: implement properly
-  cout << "Output statistics" << endl;
+  cout << "----------" << endl;
+  cout << "Statistics" << endl;
+  cout << "----------" << endl;
+  cout << "Sum of queue lengths: " << g_queue_length_sum << endl; 
+  cout << "Total server busy time: " << g_time - g_free_time_sum << endl;
+  cout << "Total simulation time: " << g_time << endl;
+  cout << "Utilization: " << 
+    ((double) (g_time - g_free_time_sum) / (double) g_time) << endl;
+  cout << "Mean queue length: " << 
+    ((double) g_queue_length_sum / (double) g_time) << endl;
+  cout << "Number of packets dropped: " << g_pkts_dropped << endl;
 }
 
 void test () {
-  Event e1(1, 23, NULL, NULL);
-  Event e2(0, 24, NULL, NULL);
-  Event e3(1, 25, NULL, NULL);
+  Event e1(1, 23);
+  Event e2(0, 24);
+  Event e3(1, 25);
 
   gel.push(e1);
   gel.push(e2);
@@ -143,36 +147,24 @@ void test () {
 
   while (!gel.empty()) {
     Event e = gel.top();
-    e.print();
-    cout << endl;
+    cout << e.details() << endl;
     gel.pop();
   }
 }
 
 int main (int argc, char* argv[]) {
   init();
-  cout << "Going through global event list" << "\n\n";
-  int i = 0;
-  while (i < 50) {
+  for (int i = 0; i < NUM_EVENTS; i++) {
     Event e = gel.top();
+    cout << "Processing " << e.details() << endl;
     gel.pop();
-    cout << "Processing ";
-    e.print();
-    cout << ". ";
-    // arrival = 1, departure = 0
-    if (e.get_type()) {
-      process_arrival_event(e);
-    }
-    else {
-      process_departure_event(e);
-    }
-    i++;
+    if (e.get_type() == 1) { process_arrival_event(e); }
+    else { process_departure_event(e); }
     cout << "buffer.size(): " << buffer.size() << endl;
     cout << "g_length: " << g_length << endl;
-    cout << "\n\n";
+    update_statistics();
   }
   // test();
-  cout << "\n\nFinished going through global event list" << "\n\n";
   output_statistics();
   return 0;
 }

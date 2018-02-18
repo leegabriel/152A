@@ -1,13 +1,15 @@
 #include <iostream>
+#include <string>
 #include "packet.hpp"
 
 using namespace std;
 
-Packet::Packet (int st) : service_time_(st) {}
-
+Packet::Packet (double st) : service_time_(st) {}
 Packet::~Packet () {}
-
-void Packet::print () {
-  cout << "Packet(" << service_time_ << ")";
+string Packet::details () { 
+  string s = "Packet(";
+  s += to_string(service_time_);
+  s += ")"; 
+  return s;
 }
 
