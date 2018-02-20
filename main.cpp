@@ -1,4 +1,5 @@
 #include <iostream>
+#include <fstream>
 #include <queue>
 #include <functional>
 #include <stdlib.h>
@@ -113,7 +114,7 @@ void process_departure_event (Event d) {
   }
 }
 
-void update_statistics () {
+void update_statistics (ofstream& fs) {
 	cout << "Free Time " << g_free_time_sum << endl;
   cout << "Updating statistics" << "\n\n";
   g_queue_length_sum += buffer.size() * g_time_difference;
@@ -122,6 +123,13 @@ void update_statistics () {
     //g_last_free_time = g_time;
     g_free_time_sum += g_time_difference;
   }
+  fs << g_time << ","; 
+  fs << g_length << ","; 
+  fs << g_server_free << ","; 
+  fs << g_last_free_time << ","; 
+  fs << g_free_time_sum << ","; 
+  fs << g_pkts_dropped << ","; 
+  fs << g_time_difference << endl;
 }
 
 void output_statistics () {
@@ -138,39 +146,27 @@ void output_statistics () {
   cout << "Number of packets dropped: " << g_pkts_dropped << endl;
 }
 
-void test () {
-  Event e1(1, 23);
-  Event e2(0, 24);
-  Event e3(1, 25);
-
-  gel.push(e1);
-  gel.push(e2);
-  gel.push(e3);
-
-  cout << "Min heap, popped one by one: " << endl;
-
-  while (!gel.empty()) {
-    Event e = gel.top();
-    cout << e.details() << endl;
-    gel.pop();
-  }
-}
-
 int main (int argc, char* argv[]) {
   init();
+
+  ofstream fs("output.txt");
+  if (!fs) {
+    cerr << "Cannot open output file" << endl;
+    return 1;
+  }
   for (int i = 0; i < NUM_EVENTS; i++) {
     Event e = gel.top();
     cout << "Processing " << e.details() << endl;
     gel.pop();
-	if (e.get_type() == 1) { process_arrival_event(e); }
+	  if (e.get_type() == 1) { process_arrival_event(e); }
     else { process_departure_event(e); }
     cout << "buffer.size(): " << buffer.size() << endl;
     cout << "g_length: " << g_length << endl;
-    update_statistics();
+    update_statistics(fs);
   }
-  // test();
   output_statistics();
-  int p;
-  cin >> p;
+  // int p;
+  // cin >> p;
+  fs.close();
   return 0;
 }
