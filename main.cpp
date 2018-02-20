@@ -58,7 +58,7 @@ Event generate_event (bool type, double custom) {
   return e;
 }
 
-void init () {
+void init (ofstream& fs) {
   cout << "Initializing" << endl;
   g_time = 0.0, g_length = 0, g_queue_length_sum = 0.0, g_last_free_time = 0.0,
     g_free_time_sum = 0.0, g_pkts_dropped = 0, g_time_difference = 0;
@@ -66,6 +66,13 @@ void init () {
   Event first = generate_event(1, NO_CUSTOM); // generate first arrival event
   gel.push(first); // push first arrival event to start simulation
   cout << "Done initializing" << "\n\n";
+  fs << "g_time" << ","; 
+  fs << "g_length" << ","; 
+  fs << "g_server_free" << ","; 
+  fs << "g_last_free_time" << ","; 
+  fs << "g_free_time_sum" << ","; 
+  fs << "g_pkts_dropped" << ","; 
+  fs << "g_time_difference" << endl;
 }
 
 void process_arrival_event (Event a) {
@@ -147,13 +154,12 @@ void output_statistics () {
 }
 
 int main (int argc, char* argv[]) {
-  init();
-
-  ofstream fs("output.txt");
+  ofstream fs("output.csv");
   if (!fs) {
     cerr << "Cannot open output file" << endl;
     return 1;
   }
+  init(fs);
   for (int i = 0; i < NUM_EVENTS; i++) {
     Event e = gel.top();
     cout << "Processing " << e.details() << endl;
@@ -165,8 +171,6 @@ int main (int argc, char* argv[]) {
     update_statistics(fs);
   }
   output_statistics();
-  // int p;
-  // cin >> p;
   fs.close();
   return 0;
 }
