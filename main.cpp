@@ -58,7 +58,7 @@ Event generate_event (bool type, double custom) {
   return e;
 }
 
-void init (ofstream& fs) {
+void init (ofstream& fs, ofstream& p1) {
   cout << "Initializing" << endl;
   g_time = 0.0, g_length = 0, g_queue_length_sum = 0.0, g_last_free_time = 0.0,
     g_free_time_sum = 0.0, g_pkts_dropped = 0, g_time_difference = 0;
@@ -73,6 +73,15 @@ void init (ofstream& fs) {
   fs << "g_free_time_sum" << ","; 
   fs << "g_pkts_dropped" << ","; 
   fs << "g_time_difference" << endl;
+  p1 << "lambda" << ",";
+  p1 << "mu" << ",";
+  p1 << "max buffer size" << ",";
+  p1 << "Sum of queue lengths" << ",";
+  p1 << "Total server busy time" << ",";
+  p1 << "Total simulation time" << ",";
+  p1 << "Utilization" << ",";
+  p1 << "Mean queue length" << ",";
+  p1 << "Number of packets dropped" << endl;
 }
 
 void process_arrival_event (Event a) {
@@ -139,7 +148,7 @@ void update_statistics (ofstream& fs) {
   fs << g_time_difference << endl;
 }
 
-void output_statistics () {
+void output_statistics (ofstream& p1) {
   cout << "----------" << endl;
   cout << "Statistics" << endl;
   cout << "----------" << endl;
@@ -151,6 +160,15 @@ void output_statistics () {
   cout << "Mean queue length: " << 
     ((double) g_queue_length_sum / (double) g_time) << endl;
   cout << "Number of packets dropped: " << g_pkts_dropped << endl;
+  p1 << LAMBDA << ",";
+  p1 << MU << ",";
+  p1 << MAX_BUFFER_SIZE << ",";
+  p1 << g_queue_length_sum << ","; 
+  p1 << g_time - g_free_time_sum << ","; 
+  p1 << g_time << ","; 
+  p1 << ((double) (g_time - g_free_time_sum) / (double) g_time) << ","; 
+  p1 << ((double) g_queue_length_sum / (double) g_time) << ","; 
+  p1 << g_pkts_dropped << endl; 
 }
 
 int main (int argc, char* argv[]) {
@@ -159,7 +177,12 @@ int main (int argc, char* argv[]) {
     cerr << "Cannot open output file" << endl;
     return 1;
   }
-  init(fs);
+  ofstream p1("p1.csv");
+  if (!p1) {
+    cerr << "Cannot open output p1 file" << endl;
+    return 1;
+  }
+  init(fs, p1);
   for (int i = 0; i < NUM_EVENTS; i++) {
     Event e = gel.top();
     cout << "Processing " << e.details() << endl;
@@ -170,7 +193,8 @@ int main (int argc, char* argv[]) {
     cout << "g_length: " << g_length << endl;
     update_statistics(fs);
   }
-  output_statistics();
+  output_statistics(p1);
   fs.close();
+  p1.close();
   return 0;
 }
