@@ -9,7 +9,7 @@
 
 using namespace std;
 
-const int NUM_EVENTS = 100000; // number of events to process 
+const int NUM_EVENTS = 1000; // number of events to process 
 const int NO_CUSTOM = -1; 
 const int MAX_BUFFER_SIZE = 10; // maximum buffer size
 const double LAMBDA = 0.2; // arrival rate in pkts/sec
@@ -24,11 +24,12 @@ queue<Packet> buffer; // queue for link processor
 
 // statistical variables
 
-int g_queue_length_sum; // sum of queue lengths 
+double g_queue_length_sum; // sum of queue lengths 
 bool g_server_free;
 double g_last_free_time;
 double g_free_time_sum;
 int g_pkts_dropped; 
+double g_time_difference;
 
 double negative_exponential (double rate) {
   mt19937 rng;
@@ -41,8 +42,10 @@ double negative_exponential (double rate) {
 void advance_system_time (Event e) {
   double old = g_time;
   g_time = e.get_time(); 
+  g_time_difference = g_time - old;
   cout << "Advancing time from ";
   cout << old << " to " << g_time << endl;
+  //cout << "Time Difference " << g_time_difference << endl;
 }
 
 Event generate_event (bool type, double custom) {
@@ -56,8 +59,8 @@ Event generate_event (bool type, double custom) {
 
 void init () {
   cout << "Initializing" << endl;
-  g_time = 0.0, g_length = 0, g_queue_length_sum = 0, g_last_free_time = 0.0,
-    g_free_time_sum = 0.0, g_pkts_dropped = 0;
+  g_time = 0.0, g_length = 0, g_queue_length_sum = 0.0, g_last_free_time = 0.0,
+    g_free_time_sum = 0.0, g_pkts_dropped = 0, g_time_difference = 0;
   g_server_free = false; // system not started, starts on first arrival event
   Event first = generate_event(1, NO_CUSTOM); // generate first arrival event
   gel.push(first); // push first arrival event to start simulation
@@ -65,7 +68,7 @@ void init () {
 }
 
 void process_arrival_event (Event a) {
-  advance_system_time(a);
+  advance_system_time(a);  //update global timer
   Packet packet(negative_exponential(MU)); // create new packet
 
   Event next_arrival = generate_event(1, NO_CUSTOM); 
@@ -111,12 +114,13 @@ void process_departure_event (Event d) {
 }
 
 void update_statistics () {
+	cout << "Free Time " << g_free_time_sum << endl;
   cout << "Updating statistics" << "\n\n";
-  g_queue_length_sum += buffer.size();
+  g_queue_length_sum += buffer.size() * g_time_difference;
   if (g_server_free) {
-    double save = g_last_free_time;
-    g_last_free_time = g_time;
-    g_free_time_sum += g_last_free_time - save;
+    //double save = g_last_free_time;
+    //g_last_free_time = g_time;
+    g_free_time_sum += g_time_difference;
   }
 }
 
@@ -158,7 +162,7 @@ int main (int argc, char* argv[]) {
     Event e = gel.top();
     cout << "Processing " << e.details() << endl;
     gel.pop();
-    if (e.get_type() == 1) { process_arrival_event(e); }
+	if (e.get_type() == 1) { process_arrival_event(e); }
     else { process_departure_event(e); }
     cout << "buffer.size(): " << buffer.size() << endl;
     cout << "g_length: " << g_length << endl;
@@ -166,5 +170,7 @@ int main (int argc, char* argv[]) {
   }
   // test();
   output_statistics();
+  int p;
+  cin >> p;
   return 0;
 }
