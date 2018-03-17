@@ -13,10 +13,9 @@ using namespace std;
 
 const int NUM_EVENTS = 100000; // number of events to process 
 const int NO_CUSTOM = -1; 
-const int MAX_BUFFER_SIZE = 50; // maximum buffer size
-const double LAMBDA = 0.8; // arrival rate in pkts/sec
+const int MAX_BUFFER_SIZE = INT_MAX; // maximum buffer size
+const double LAMBDA = 0.9; // arrival rate in pkts/sec
 const double MU = 1.0; // departure rate in pkts/sec
-int num_hosts = 25;
 
 // simulation variables
 
@@ -40,17 +39,6 @@ double negative_exponential (double rate) {
   return (((-1 / rate) * log(1 - u)));
 }
 
-//Randomly chooses the next host
-int chooseNextHost(int src) {
-  int next = rand() % num_hosts;
-  if (next == src) {
-	  return chooseNextHost(src);
-  }
-  else {
-	  return next;
-  }
-}
-
 void advance_system_time (Event e) {
   double old = g_time;
   g_time = e.get_time(); 
@@ -69,19 +57,21 @@ Event generate_event (bool type, double custom) {
 }
 
 void init (ofstream& fs) {
-  //TODO: User prompts
-  cout << "Set the number of hosts: ";
-  cout << "Set Lambda: ";
-
   cout << "Initializing" << endl;
-  //TODO: Change Init sequence
   g_time = 0.0, g_length = 0, g_queue_length_sum = 0.0,
     g_free_time_sum = 0.0, g_pkts_dropped = 0, g_time_difference = 0;
   Event first = generate_event(1, NO_CUSTOM); // generate first arrival event
   gel.push(first); // push first arrival event to start simulation
   cout << "Done initializing" << "\n\n";
   fs << "lambda" << ",";
-  fs << "Number of packets dropped" << endl;
+  // fs << "mu" << ",";
+  // fs << "max buffer size" << ",";
+  // fs << "Sum of queue lengths" << ",";
+  // fs << "Total server busy time" << ",";
+  // fs << "Total simulation time" << ",";
+  fs << "Utilization" << ",";
+  fs << "Mean queue length" << endl;
+  // fs << "Number of packets dropped" << endl;
 }
 
 void process_arrival_event (Event a) {
@@ -112,7 +102,6 @@ void process_arrival_event (Event a) {
   }
 }
 
-//TODO: Debate on necessity
 void process_departure_event (Event d) {
   advance_system_time(d);
   g_length--; // packet is out of system now
@@ -136,7 +125,6 @@ void update_statistics () {
 }
 
 void output_statistics (ofstream& fs) {
-  //TODO: Change Output Statistics
   cout << "----------" << endl;
   cout << "Statistics" << endl;
   cout << "----------" << endl;
@@ -154,19 +142,18 @@ void output_statistics (ofstream& fs) {
   // fs << g_queue_length_sum << ","; 
   // fs << g_time - g_free_time_sum << ","; 
   // fs << g_time << ","; 
-  // fs << ((double) (g_time - g_free_time_sum) / (double) g_time) << ","; 
-  // fs << ((double) g_queue_length_sum / (double) g_time) << ","; 
-  fs << g_pkts_dropped << endl; 
+  fs << ((double) (g_time - g_free_time_sum) / (double) g_time) << ","; 
+  fs << ((double) g_queue_length_sum / (double) g_time) << endl; 
+  // fs << g_pkts_dropped << endl; 
 }
 
 int main (int argc, char* argv[]) {
   ofstream fs("output.csv");
   if (!fs) {
-    cerr << "Cannot open output.csv file" << endl;
+    cerr << "Cannot open file" << endl;
     return 1;
   }
   init(fs);
-  //TODO: Change to hosting loop 
   for (int i = 0; i < NUM_EVENTS; i++) {
     Event e = gel.top();
     cout << "Processing " << e.details() << endl;
