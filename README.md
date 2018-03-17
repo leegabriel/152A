@@ -6,13 +6,21 @@ Simulation analysis of an IEEE 802.X network
 
 ```
 $ git clone https://github.com/leegabriel/152A
-$ cd 152A
-$ make
 ```
 
 ## Usage
 
+### Phase 1
 ```
+$ cd phase_1
+$ make
+$ ./simulation.out
+```
+
+### Phase 2
+```
+$ cd phase_2
+$ make
 $ ./simulation.out
 ```
 
