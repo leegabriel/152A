@@ -112,5 +112,16 @@ void output_statistics (ofstream& fs) {
 //
 
 int main (int argc, char* argv[]) {
-  // TODO: implement
+  ofstream fs("output.csv");
+  if (!fs) {
+    cerr << "Cannot open file" << endl;
+    return 1;
+  }
+  init(fs);
+  for (int i = 0; i < NUM_EVENTS; i++) {
+    // TODO: implement
+  }
+  output_statistics(fs);
+  fs.close();
+  return 0;
 }
