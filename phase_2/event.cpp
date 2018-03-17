@@ -4,7 +4,7 @@
 
 using namespace std;
 
-Event::Event (bool type, double time) : type_(type), time_(time) {}
+Event::Event (char type, double time) : type_(type), time_(time) {}
 Event::~Event () {}
 string Event::details () { 
   string s = "Event(";

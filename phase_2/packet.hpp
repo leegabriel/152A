@@ -9,13 +9,13 @@ using namespace std;
 
 class Packet {
   private:
-    double service_time_; // intrinsic service time
-	int packet_size_;
+    double service_time_; // intrinsic service time (queuing delay)
+    int packet_size_;
   public:
-    Packet (double st);
+    Packet (double st, int ps);
     ~Packet ();
     double get_service_time () { return service_time_; }
-	int get_packet_size() { return packet_size_; }
+    int get_packet_size() { return packet_size_; }
     string details ();
 };
 

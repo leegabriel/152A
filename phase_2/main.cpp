@@ -11,26 +11,37 @@
 
 using namespace std;
 
-const int NUM_EVENTS = 100000; // number of events to process 
-const int NO_CUSTOM = -1; 
-const int MAX_BUFFER_SIZE = INT_MAX; // maximum buffer size
-const double LAMBDA = 0.9; // arrival rate in pkts/sec
-const double MU = 1.0; // departure rate in pkts/sec
-int num_hosts = 25;
+//
+// constants
+//
 
+const int NUM_EVENTS = 100000; // number of events to process for simulation
+const int MAX_BUFF_SIZE = INT_MAX; // maximum buffer size
+const double LAMBDA = 0.9; // 0.01, 0.05, 0.1, 0.2, 0.3, 0.5, 0.6, 0.7, 0.8, 0.9
+
+const int NUM_HOSTS = 25; // number of hosts in Token Ring LAN
+const double LINK_PROP_DELAY = 0.01; // 10 microseconds = 0.01 milliseconds
+const int TRANSMISSION_RATE = 100; // 100 Mbps, rates are always in bits
+
+//
 // simulation variables
+//
 
-double g_time; // absolute system time
-int g_length; // total number of packets in system (buffer + server)
+double g_time; // absolute/total system time
 priority_queue<Event, vector<Event>, greater<Event>> gel; // global event list
-queue<Packet> buffer; // queue for link processor
 
+//
 // statistical variables
+//
 
-double g_queue_length_sum; // sum of queue lengths 
-double g_free_time_sum;
-int g_pkts_dropped; 
-double g_time_difference;
+int g_bytes_transmitted_sum; // number of bytes successfully transmitted
+double g_queuing_delay_sum; // each host 
+double g_transmission_delay_sum; // each host 
+double g_propagation_delay_sum; // among hosts
+
+//
+// functions
+//
 
 double negative_exponential (double rate) {
   mt19937 rng;
@@ -40,155 +51,66 @@ double negative_exponential (double rate) {
   return (((-1 / rate) * log(1 - u)));
 }
 
-//Randomly chooses the next host
-int chooseNextHost(int src) {
-  int next = rand() % num_hosts;
-  if (next == src) {
-	  return chooseNextHost(src);
-  }
-  else {
-	  return next;
-  }
+int generate_packet_size () {
+  return (rand() % (1518 - 64)) + 64;
+}
+
+int choose_next_host (int src) {
+  int next = rand() % NUM_HOSTS;
+  if (next == src) { return choose_next_host (src); } 
+  return next;
 }
 
 void advance_system_time (Event e) {
-  double old = g_time;
-  g_time = e.get_time(); 
-  g_time_difference = g_time - old;
-  cout << "Advancing time from ";
-  cout << old << " to " << g_time << endl;
+  // TODO: implement
 }
 
-Event generate_event (bool type, double custom) {
-  double ist; // intrinsic service time
-  if (custom != NO_CUSTOM) { ist = custom; } // user-defined ist
-  else { ist = type ? negative_exponential(LAMBDA) : negative_exponential(MU); }
-  Event e(type, g_time + ist);
-  cout << "New event: " << e.details() << endl;
-  return e;
+Event generate_event (char type) {
+  // TODO: implement
 }
 
 void init (ofstream& fs) {
-  //TODO: User prompts
-  cout << "Set the number of hosts: ";
-  cout << "Set Lambda: ";
-
   cout << "Initializing" << endl;
-  //TODO: Change Init sequence
-  g_time = 0.0, g_length = 0, g_queue_length_sum = 0.0,
-    g_free_time_sum = 0.0, g_pkts_dropped = 0, g_time_difference = 0;
-  Event first = generate_event(1, NO_CUSTOM); // generate first arrival event
-  gel.push(first); // push first arrival event to start simulation
+
+  g_bytes_transmitted_sum = 0, g_queuing_delay_sum = 0.0, 
+    g_transmission_delay_sum = 0.0, g_propagation_delay_sum = 0.0;
+
   cout << "Done initializing" << "\n\n";
-  fs << "lambda" << ",";
-<<<<<<< HEAD:main.cpp
-  fs << "Number of packets dropped" << endl;
-=======
-  // fs << "mu" << ",";
-  // fs << "max buffer size" << ",";
-  // fs << "Sum of queue lengths" << ",";
-  // fs << "Total server busy time" << ",";
-  // fs << "Total simulation time" << ",";
-  fs << "Utilization" << ",";
-  fs << "Mean queue length" << endl;
-  // fs << "Number of packets dropped" << endl;
->>>>>>> a7d38822d3f16e0c8980b4939f85dcec8e7938a2:phase_1/main.cpp
+  fs << "N/A" << endl;
 }
 
 void process_arrival_event (Event a) {
-  advance_system_time(a);  //update global timer
-  Packet packet(negative_exponential(MU)); // create new packet
-
-  Event next_arrival = generate_event(1, NO_CUSTOM); 
-  gel.push(next_arrival);
-
-  if (g_length == 0) { // server free
-    cout << "Server free, will now process this packet" << endl;
-    g_free_time_sum += g_time_difference; // record server free time
-    Event depart_event = generate_event(0, packet.get_service_time());
-    gel.push(depart_event);
-    g_length = 1; // 1 packet in system, being processed in server
-  }
-  else if (g_length > 0) { // server busy
-    cout << "Server busy. ";
-    if (g_length - 1 < MAX_BUFFER_SIZE) { // buffer not full
-      cout << "Buffer NOT full, queuing packet" << endl;
-      buffer.push(packet); 
-      g_length++; // 1 more packet in system (in buffer)
-    }
-    else { // buffer full
-      cout << "Buffer full, dropping packet" << endl;
-      g_pkts_dropped++;
-    }
-  }
+  // TODO: implement
 }
 
-//TODO: Debate on necessity
-void process_departure_event (Event d) {
-  advance_system_time(d);
-  g_length--; // packet is out of system now
-  cout << "Server done processing packet" << endl;
-  if (g_length > 0) { // buffer not empty
-    cout << "Buffer NOT empty, processing next packet" << endl;
-    Packet packet = buffer.front(); 
-    buffer.pop(); // dequeue packet
-    Event depart_event = generate_event(0, packet.get_service_time());
-    gel.push(depart_event);
-  } 
-  else { // buffer empty
-    cout << "Buffer empty, taking no action" << endl; 
-  }
+void process_token_event (Event t) {
+  // TODO: implement
 }
 
 void update_statistics () {
-	cout << "Total server free time: " << g_free_time_sum << endl;
-  cout << "Updating statistics" << "\n\n";
-  g_queue_length_sum += buffer.size() * g_time_difference;
+  // TODO: implement
 }
 
 void output_statistics (ofstream& fs) {
-  //TODO: Change Output Statistics
   cout << "----------" << endl;
   cout << "Statistics" << endl;
   cout << "----------" << endl;
-  cout << "Sum of queue lengths: " << g_queue_length_sum << endl; 
-  cout << "Total server busy time: " << (g_time - g_free_time_sum) << endl;
   cout << "Total simulation time: " << g_time << endl;
-  cout << "Utilization: " << 
-    ((double) ((g_time - g_free_time_sum)) / (double) g_time) << endl;
-  cout << "Mean queue length: " << 
-    ((double) g_queue_length_sum / (double) g_time) << endl;
-  cout << "Number of packets dropped: " << g_pkts_dropped << endl;
-  fs << LAMBDA << ",";
-  // fs << MU << ",";
-  // fs << MAX_BUFFER_SIZE << ",";
-  // fs << g_queue_length_sum << ","; 
-  // fs << g_time - g_free_time_sum << ","; 
-  // fs << g_time << ","; 
-  fs << ((double) (g_time - g_free_time_sum) / (double) g_time) << ","; 
-  fs << ((double) g_queue_length_sum / (double) g_time) << endl; 
-  // fs << g_pkts_dropped << endl; 
+  cout << "Bytes transmitted: " << g_bytes_transmitted_sum << endl;
+  cout << "Throughput: " << ((double) g_bytes_transmitted_sum / g_time) << endl;
+  cout << "Total queuing delay: " << g_queuing_delay_sum << endl;
+  cout << "Total transmission delay: " << g_transmission_delay_sum << endl;
+  cout << "Total propagation delay: " << g_propagation_delay_sum << endl;
+  cout << "Average packet delay: " <<  
+    ((g_queuing_delay_sum + g_transmission_delay_sum
+      + g_transmission_delay_sum) / g_time) << endl;
+  fs << "N/A" << endl;
 }
 
+//
+// main function
+//
+
 int main (int argc, char* argv[]) {
-  ofstream fs("output.csv");
-  if (!fs) {
-    cerr << "Cannot open file" << endl;
-    return 1;
-  }
-  init(fs);
-  //TODO: Change to hosting loop 
-  for (int i = 0; i < NUM_EVENTS; i++) {
-    Event e = gel.top();
-    cout << "Processing " << e.details() << endl;
-    gel.pop();
-	  if (e.get_type() == 1) { process_arrival_event(e); }
-    else { process_departure_event(e); }
-    cout << "buffer.size(): " << buffer.size() << endl;
-    cout << "g_length: " << g_length << endl;
-    update_statistics();
-  }
-  output_statistics(fs);
-  fs.close();
-  return 0;
+  // TODO: implement
 }
