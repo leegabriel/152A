@@ -150,7 +150,7 @@ void output_statistics (ofstream& fs) {
 int main (int argc, char* argv[]) {
   ofstream fs("output.csv");
   if (!fs) {
-    cerr << "Cannot open output.csv file" << endl;
+    cerr << "Cannot open file" << endl;
     return 1;
   }
   init(fs);
