@@ -13,8 +13,8 @@ using namespace std;
 
 const int NUM_EVENTS = 100000; // number of events to process 
 const int NO_CUSTOM = -1; 
-const int MAX_BUFFER_SIZE = INT_MAX; // maximum buffer size
-const double LAMBDA = 0.9; // arrival rate in pkts/sec
+const int MAX_BUFFER_SIZE = 50; // maximum buffer size
+const double LAMBDA = 0.8; // arrival rate in pkts/sec
 const double MU = 1.0; // departure rate in pkts/sec
 
 // simulation variables
@@ -34,7 +34,7 @@ double g_time_difference;
 double negative_exponential (double rate) {
   mt19937 rng;
   rng.seed(random_device()());
-  uniform_real_distribution<double> distribution(0.0,1.0);
+  uniform_real_distribution<double> distribution(0.0, 1.0);
   double u = distribution(rng);
   return (((-1 / rate) * log(1 - u)));
 }
@@ -56,22 +56,22 @@ Event generate_event (bool type, double custom) {
   return e;
 }
 
-void init (ofstream& p1) {
+void init (ofstream& fs) {
   cout << "Initializing" << endl;
   g_time = 0.0, g_length = 0, g_queue_length_sum = 0.0,
     g_free_time_sum = 0.0, g_pkts_dropped = 0, g_time_difference = 0;
   Event first = generate_event(1, NO_CUSTOM); // generate first arrival event
   gel.push(first); // push first arrival event to start simulation
   cout << "Done initializing" << "\n\n";
-  p1 << "lambda" << ",";
-  // p1 << "mu" << ",";
-  // p1 << "max buffer size" << ",";
-  // p1 << "Sum of queue lengths" << ",";
-  // p1 << "Total server busy time" << ",";
-  // p1 << "Total simulation time" << ",";
-  // p1 << "Utilization" << ",";
-  // p1 << "Mean queue length" << ",";
-  p1 << "Number of packets dropped" << endl;
+  fs << "lambda" << ",";
+  // fs << "mu" << ",";
+  // fs << "max buffer size" << ",";
+  // fs << "Sum of queue lengths" << ",";
+  // fs << "Total server busy time" << ",";
+  // fs << "Total simulation time" << ",";
+  // fs << "Utilization" << ",";
+  // fs << "Mean queue length" << ",";
+  fs << "Number of packets dropped" << endl;
 }
 
 void process_arrival_event (Event a) {
@@ -124,7 +124,7 @@ void update_statistics () {
   g_queue_length_sum += buffer.size() * g_time_difference;
 }
 
-void output_statistics (ofstream& p1) {
+void output_statistics (ofstream& fs) {
   cout << "----------" << endl;
   cout << "Statistics" << endl;
   cout << "----------" << endl;
@@ -136,24 +136,24 @@ void output_statistics (ofstream& p1) {
   cout << "Mean queue length: " << 
     ((double) g_queue_length_sum / (double) g_time) << endl;
   cout << "Number of packets dropped: " << g_pkts_dropped << endl;
-  p1 << LAMBDA << ",";
-  // p1 << MU << ",";
-  // p1 << MAX_BUFFER_SIZE << ",";
-  // p1 << g_queue_length_sum << ","; 
-  // p1 << g_time - g_free_time_sum << ","; 
-  // p1 << g_time << ","; 
-  // p1 << ((double) (g_time - g_free_time_sum) / (double) g_time) << ","; 
-  // p1 << ((double) g_queue_length_sum / (double) g_time) << ","; 
-  p1 << g_pkts_dropped << endl; 
+  fs << LAMBDA << ",";
+  // fs << MU << ",";
+  // fs << MAX_BUFFER_SIZE << ",";
+  // fs << g_queue_length_sum << ","; 
+  // fs << g_time - g_free_time_sum << ","; 
+  // fs << g_time << ","; 
+  // fs << ((double) (g_time - g_free_time_sum) / (double) g_time) << ","; 
+  // fs << ((double) g_queue_length_sum / (double) g_time) << ","; 
+  fs << g_pkts_dropped << endl; 
 }
 
 int main (int argc, char* argv[]) {
-  ofstream p1("p1.csv");
-  if (!p1) {
-    cerr << "Cannot open output p1 file" << endl;
+  ofstream fs("output.csv");
+  if (!fs) {
+    cerr << "Cannot open output.csv file" << endl;
     return 1;
   }
-  init(p1);
+  init(fs);
   for (int i = 0; i < NUM_EVENTS; i++) {
     Event e = gel.top();
     cout << "Processing " << e.details() << endl;
@@ -164,7 +164,7 @@ int main (int argc, char* argv[]) {
     cout << "g_length: " << g_length << endl;
     update_statistics();
   }
-  output_statistics(p1);
-  p1.close();
+  output_statistics(fs);
+  fs.close();
   return 0;
 }
