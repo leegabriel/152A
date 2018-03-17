@@ -13,8 +13,8 @@ using namespace std;
 
 const int NUM_EVENTS = 100000; // number of events to process 
 const int NO_CUSTOM = -1; 
-const int MAX_BUFFER_SIZE = 50; // maximum buffer size
-const double LAMBDA = 0.8; // arrival rate in pkts/sec
+const int MAX_BUFFER_SIZE = INT_MAX; // maximum buffer size
+const double LAMBDA = 0.9; // arrival rate in pkts/sec
 const double MU = 1.0; // departure rate in pkts/sec
 
 // simulation variables
@@ -69,9 +69,9 @@ void init (ofstream& fs) {
   // fs << "Sum of queue lengths" << ",";
   // fs << "Total server busy time" << ",";
   // fs << "Total simulation time" << ",";
-  // fs << "Utilization" << ",";
-  // fs << "Mean queue length" << ",";
-  fs << "Number of packets dropped" << endl;
+  fs << "Utilization" << ",";
+  fs << "Mean queue length" << endl;
+  // fs << "Number of packets dropped" << endl;
 }
 
 void process_arrival_event (Event a) {
@@ -142,9 +142,9 @@ void output_statistics (ofstream& fs) {
   // fs << g_queue_length_sum << ","; 
   // fs << g_time - g_free_time_sum << ","; 
   // fs << g_time << ","; 
-  // fs << ((double) (g_time - g_free_time_sum) / (double) g_time) << ","; 
-  // fs << ((double) g_queue_length_sum / (double) g_time) << ","; 
-  fs << g_pkts_dropped << endl; 
+  fs << ((double) (g_time - g_free_time_sum) / (double) g_time) << ","; 
+  fs << ((double) g_queue_length_sum / (double) g_time) << endl; 
+  // fs << g_pkts_dropped << endl; 
 }
 
 int main (int argc, char* argv[]) {

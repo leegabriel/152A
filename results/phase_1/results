@@ -1,0 +1,110 @@
+Arrival Rate,Mean Queue Length
+0.1,0.0114576
+0.25,0.0807844
+0.4,0.265659
+0.55,0.702522
+0.65,1.21386
+0.8,3.38006
+0.9,8.89033
+
+Arrival Rate,Server Utilization
+0.1,0.1003
+0.25,0.248452
+0.4,0.398949
+0.55,0.551374
+0.65,0.646344
+0.8,0.801745
+0.9,0.896853
+
+
+MAX_BUFFER=1
+
+lambda,Number of packets dropped
+0.2,1675
+0.4,5389
+0.6,10130
+0.8,15071
+0.9,17639
+
+MAX_BUFFER=20
+
+lambda,Number of packets dropped
+0.2,0
+0.4,0
+0.6,2
+0.8,43
+0.9,615
+
+MAX_BUFFER = 50
+
+lambda,Number of packets dropped
+0.2,0
+0.4,0
+0.6,0
+0.8,0
+0.9,14
+
+Problem 2: 
+
+Server Utilization:
+
+Mu = 1
+Server Utilization = rho = lambda/mu
+
+Lambda = 0.1: 
+Theoretical: Lambda / mu = 0.1/1 = 0.1
+
+Lambda = 0.25:
+Theoretical: Lambda / mu = 0.25 / 1 = 0.25
+
+Lambda = 0.4:
+Theoretical: Lambda / mu = 0.4 / 1 = 0.4
+
+Lambda = 0.55:
+Theoretical: Lambda / mu = 0.55 / 1 = 0.55
+ 
+Lambda = 0.65:
+Theoretical: Lambda / mu = 0.65 / 1 = 0.65
+
+Lambda = 0.8:
+Theoretical: Lambda / mu = 0.8 / 1 = 0.8
+
+Lambda = 0.9:
+Theoretical: Lambda / mu = 0.9 / 1 = 0.9 
+
+Mean Queue Length:
+
+Rho = lambda/mu
+Mu = 1
+Mean Queue Length = rho/(1- rho)
+
+Lambda = 0.1:  
+Rho = 0.1
+Theoretical: rho/(1 - rho) = 0.1/0.9 = 0.111 
+
+Lambda = 0.25:
+Rho = 0.25
+Theoretical: rho/(1 - rho) = 0.25/0.75 = 0.333
+
+Lambda = 0.4:
+Rho = 0.4
+Theoretical: rho/(1 - rho) = 0.4/0.6 = 0.666
+
+Lambda = 0.55:
+Rho = 0.55
+Theoretical: rho/(1 - rho) = 0.55/0.45 = 1.222
+
+Lambda = 0.65:
+Rho = 0.65
+Theoretical: rho/(1 - rho) = 0.65/0.35 = 1.857
+
+Lambda = 0.8:
+Rho = 0.8
+Theoretical: rho/(1 - rho) = 0.8/0.2 = 4
+
+Lambda = 0.9:
+Rho = 0.9 
+Theoretical: rho/(1 - rho) = 0.9/0.1 = 9
+
+
+
