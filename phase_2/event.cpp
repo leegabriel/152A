@@ -17,7 +17,7 @@ Event::Event() {
 Event::~Event () {}
 string Event::details () { 
   string s = "Event(";
-  s += to_string(type_);
+  s += type_;
   s += ", ";
   s += to_string(time_);
   s += ", ";

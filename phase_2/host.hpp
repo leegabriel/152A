@@ -12,14 +12,12 @@ using namespace std;
 class Host {
   private:
     int num_;
-    int has_token_; // 1 = has token, 0 = no token
     double last_token_time_;
     queue<Packet> buffer_; 
   public:
     Host (int n);
     ~Host ();
     int get_num () { return num_; }
-    int has_token() { return has_token_; }
     int get_size () { return buffer_.size(); }
     double get_last_token_time() { return last_token_time_; }
     queue<Packet> get_buffer();
