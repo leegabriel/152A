@@ -16,7 +16,7 @@ string Host::details () {
   string s = "Host(";
   s += to_string(num_);
   s += ", ";
-  s += to_string(host_token_);
+  s += to_string(has_token_);
   s += ", ";
   s += to_string(last_token_time_);
   s += ", ";
@@ -25,3 +25,16 @@ string Host::details () {
   return s;
 }
 
+void Host::push_packet(Packet packet) {
+  buffer_.push(packet);
+}
+
+queue<Packet> Host::get_buffer() {
+  return buffer_;
+}
+
+void Host::empty_buffer() {
+  while (!buffer_.empty()) {
+    buffer_.pop();
+  }
+}

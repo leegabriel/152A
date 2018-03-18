@@ -7,6 +7,7 @@
 #include <math.h>
 #include <limits.h>
 #include "event.hpp"
+#include "host.hpp"
 #include "packet.hpp"
 
 using namespace std;
@@ -96,7 +97,7 @@ void init (ofstream& fs) {
 
   // initialize array of Host objects
   for (int i = 0; i < NUM_HOSTS; i++) {
-    hosts[i] = Host(i);
+    g_hosts[i] = Host(i);
   }
 
   // first arrival event for each host
@@ -116,7 +117,7 @@ void init (ofstream& fs) {
 
 void process_arrival_event (Event a) {
   advance_system_time(a); 
-  int host_num = a.get_num();
+  int host_num = a.get_host_num();
   // add packet with random destination host to buffer
   // queuing delay is a time from the negative exponential distribution ??? NO??
   // DOESNT QUEUING DELAY DEPEND ON SIZE?
@@ -126,7 +127,7 @@ void process_arrival_event (Event a) {
     choose_next_host(host_num));
 
   // add packet to host's buffer
-  g_hosts[host_num].buffer_.push(packet);
+  g_hosts[host_num].push_packet(packet);
 
   // generate next arrival event
   Event next_arrival = generate_event('A', host_num); 
@@ -135,7 +136,7 @@ void process_arrival_event (Event a) {
 
 void process_token_event (Event t) {
   advance_system_time(t); 
-  int host_num = t.get_num();
+  int host_num = t.get_host_num();
   Host host = g_hosts[host_num]; // host with this particular host number
   Event next_token_event = generate_event('T', host_num); 
   gel.push(next_token_event); // push next token event for this host
@@ -152,7 +153,7 @@ void process_token_event (Event t) {
     // transmission delay = ((packet size * 8)/ 100mbps) * NUM_Hosts
     // prop  delay = 0.01 * Num_hosts
     // queueing delay = packet.service time
-    queue<Packet> b = host.buffer_;
+    queue<Packet> b = host.get_buffer();
     g_total_pkts_transmitted += b.size();
 
     // load bytes of each packet into frame while emptying buffer

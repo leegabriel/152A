@@ -10,6 +10,10 @@ Event::Event (char type, double time, int hn) {
   host_num_ = hn;
 }
 
+Event::Event() {
+
+}
+
 Event::~Event () {}
 string Event::details () { 
   string s = "Event(";

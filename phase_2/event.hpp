@@ -12,7 +12,8 @@ class Event {
     double time_; // absolute system time when event occurs
     int host_num_;
   public:
-    Event(char type, double time);
+    Event(char type, double time, int hn);
+    Event();
     ~Event();
     char get_type() { return type_; }
     double get_time () const { return time_; } // needs to be const for operator
