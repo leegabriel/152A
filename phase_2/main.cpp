@@ -18,11 +18,11 @@ using namespace std;
 
 const int NUM_EVENTS = 100000; // number of events to process for simulation
 const int MAX_BUFF_SIZE = INT_MAX; // maximum buffer size
-const double LAMBDA = 175; // 0.01, 0.05, 0.1, 0.2, 0.3, 0.5, 0.6, 0.7, 0.8, 0.9
+const double LAMBDA = 0.01; // 0.01, 0.05, 0.1, 0.2, 0.3, 0.5, 0.6, 0.7, 0.8, 0.9
 
 const int NUM_HOSTS = 10; // number of hosts in Token Ring LAN
 const double LINK_PROP_DELAY = 0.01; // 10 microseconds = 0.01 milliseconds
-const int TRANSMIT_RATE = 100; // 100 Mbps, rates are always in bits
+const int TRANSMIT_RATE = 100000000; // 100 Mbps = 100000000 bits per second
 
 //
 // simulation variables
@@ -70,13 +70,13 @@ void advance_system_time (Event e) {
   cout << old << " to " << g_time << endl;
 }
 
-Event generate_event (char type, int host_num) {
+Event generate_event (char type, double delay, int host_num) {
   Event e;
   if (type == 'A') {
-    e = Event('A', g_time + negative_exponential(LAMBDA), host_num);
+    e = Event(type, g_time + delay, host_num);
   }
   else if (type == 'T') {
-    e = Event('T', g_time + LINK_PROP_DELAY, ((host_num + 1) % NUM_HOSTS) );
+    e = Event(type, g_time + delay, ((host_num + 1) % NUM_HOSTS) );
   }
   cout << "New event: " << e.details() << endl;
   return e;
@@ -96,13 +96,13 @@ void init (ofstream& fs) {
 
   // first arrival event for each host
   for (int i = 0; i < NUM_HOSTS; i++) {
-    Event a = generate_event('A', i); 
+    Event a = generate_event('A', negative_exponential(LAMBDA), i); 
     gel.push(a); 
   }
 
   // first token event
   int start_host_num = rand() % NUM_HOSTS - 1;
-  Event t = generate_event('T', start_host_num);
+  Event t = generate_event('T', LINK_PROP_DELAY, start_host_num);
   gel.push(t);
 
   cout << "Done initializing" << "\n\n";
@@ -123,46 +123,65 @@ void process_arrival_event (Event a) {
   g_hosts[host_num]->push_packet(packet);
 
   // generate next arrival event
-  Event next_arrival_event = generate_event('A', host_num); 
+  Event next_arrival_event = generate_event('A', 
+    negative_exponential(LAMBDA), host_num); 
   gel.push(next_arrival_event); // push next arrival for this host
+  cout << g_hosts[host_num]->details() << endl;
   cout << "\n";
 }
 
 void process_token_event (Event t) {
   advance_system_time(t); 
   int host_num = t.get_host_num();
-  Event next_token_event = generate_event('T', host_num); 
-  gel.push(next_token_event); // push next token event for this host
+  Event next_token_event; // need to determine how much delay
   
   int buffer_size = g_hosts[host_num]->get_size();
   if (buffer_size == 0) {
-    // pass token to next host
-    cout << "No packets in buffer, continuing" << endl;
+    cout << "No packets in buffer, passing token" << endl;
+
+    // next token event will be g_time + LINK_PROP_DELAY
+    next_token_event = generate_event('T', LINK_PROP_DELAY, host_num); 
+    gel.push(next_token_event); // push next token event for this host
   }
   else {
-    cout << "Packets in buffer, emptying buffer and recording stats" << endl;
-    queue<Packet> b = g_hosts[host_num]->get_buffer();
-    g_total_pkts_transmitted += b.size();
+    cout << "Packets in buffer - emptying buffer and passing frame" << endl;
 
-    // load bytes of each packet into frame while emptying buffer
-    while (!b.empty()) {
-      Packet p = b.front();
-      int packet_size = p.get_packet_size(); // bytes
-      g_total_bytes_transmitted += packet_size;
+    queue<Packet> buffer_copy = g_hosts[host_num]->get_buffer(); 
+    g_total_pkts_transmitted += buffer_copy.size(); // record number of packets 
 
-      // xmission delay = ((packet size * 8)/ 100Mbps) * (1000 ms/s) * NUM_HOSTS
-      // prop delay = 0.01 * NUM_HOSTS
-      // queuing delay = packet.service time
+    int total_packet_bytes = 0;
 
-      g_total_transmit_delay += 
-        ((packet_size * 8) / (TRANSMIT_RATE * 1000000.0)) * 1000.0 
-          * NUM_HOSTS; // ms
-      g_total_prop_delay += 0.01 * NUM_HOSTS; // ms
-      g_total_queuing_delay += (p.get_service_time()); // ms
-      b.pop();
+    while (!buffer_copy.empty()) {
+      Packet p = buffer_copy.front(); // get packet at front of queue
+      int packet_size = p.get_packet_size(); // get bytes of packet
+      g_total_bytes_transmitted += packet_size; // needed for stats
+      total_packet_bytes += packet_size; // needed to calculate transmit delay
+
+      // record total_queuing_delay
+      g_total_queuing_delay += p.get_service_time() * 1000.0; // ms
+
+      buffer_copy.pop(); // remove so we can go to next packet in queue
     }
-    g_hosts[host_num]->empty_buffer();
+
+    // record total transmission delay
+    g_total_transmit_delay += (NUM_HOSTS * (LINK_PROP_DELAY + 
+        ((total_packet_bytes * 8) / TRANSMIT_RATE) * 1000.0)); // ms
+
+    // record total propagation delay
+    g_total_prop_delay += (LINK_PROP_DELAY * NUM_HOSTS) + LINK_PROP_DELAY; // ms
+
+    g_hosts[host_num]->empty_buffer(); // empty this host's buffer
+
+    // next token event will be 
+    // g_time + LINK_PROP_DELAY + (NUM_HOSTS * (LINK_PROP_DELAY + 
+    // ((total_packet_bytes * 8) / TRANSMIT_RATE)) in milliseconds
+    next_token_event = generate_event('T', 
+      LINK_PROP_DELAY + (NUM_HOSTS * (LINK_PROP_DELAY + 
+        ((total_packet_bytes * 8) / TRANSMIT_RATE) * 1000.0)) , host_num);
+    gel.push(next_token_event); // push next token event for this host
   }
+
+  cout << g_hosts[host_num]->details() << endl;
   cout << "\n";
 }
 

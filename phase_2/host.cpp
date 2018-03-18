@@ -14,10 +14,10 @@ Host::~Host () {}
 string Host::details () { 
   string s = "Host(";
   s += to_string(num_);
+  // s += ", ";
+  // s += to_string(last_token_time_);
   s += ", ";
-  s += to_string(last_token_time_);
-  s += ", ";
-  s += to_string(buffer_.size());
+  s += to_string(buffer_.size()) + " packets";
   s += ")"; 
   return s;
 }
