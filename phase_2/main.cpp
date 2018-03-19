@@ -16,13 +16,13 @@ using namespace std;
 // constants
 //
 
-const int NUM_EVENTS = 100000; // number of events to process for simulation
+int NUM_EVENTS = 100000; // number of events to process for simulation
 const int MAX_BUFF_SIZE = INT_MAX; // maximum buffer size
-const double LAMBDA = 0.01; // 0.01, 0.05, 0.1, 0.2, 0.3, 0.5, 0.6, 0.7, 0.8, 0.9
+double LAMBDA = 0.9; // 0.01, 0.05, 0.1, 0.2, 0.3, 0.5, 0.6, 0.7, 0.8, 0.9
 
-const int NUM_HOSTS = 10; // number of hosts in Token Ring LAN
+int NUM_HOSTS = 25; // number of hosts in Token Ring LAN
 const double LINK_PROP_DELAY = 0.01; // 10 microseconds = 0.01 milliseconds
-const int TRANSMIT_RATE = 100000000; // 100 Mbps = 100000000 bits per second
+const int TRANSMIT_RATE = 100000; // 100 Mbps = 100000000 bits per second
 
 //
 // simulation variables
@@ -30,11 +30,11 @@ const int TRANSMIT_RATE = 100000000; // 100 Mbps = 100000000 bits per second
 
 double g_time; // absolute/total system time
 priority_queue<Event, vector<Event>, greater<Event>> gel; // global event list
-Host* g_hosts[NUM_HOSTS]; // ring of hosts
+Host* g_hosts[25]; // ring of hosts
 
-//
-// statistical variables
-//
+                          //
+                          // statistical variables
+                          //
 
 int g_total_bytes_transmitted; // number of bytes successfully transmitted
 double g_total_queuing_delay; // each host 
@@ -46,7 +46,7 @@ int g_total_pkts_transmitted;
 // functions
 //
 
-double negative_exponential (double rate) {
+double negative_exponential(double rate) {
   mt19937 rng;
   rng.seed(random_device()());
   uniform_real_distribution<double> distribution(0.0, 1.0);
@@ -54,38 +54,45 @@ double negative_exponential (double rate) {
   return (((-1 / rate) * log(1 - u)));
 }
 
-int generate_packet_size () { return (rand() % (1518 - 64)) + 64; }
+int generate_packet_size() { return (rand() % (1518 - 64)) + 64; }
 
 // for choosing a random destination host for the packet
-int choose_next_host (int src) {
+int choose_next_host(int src) {
   int next = rand() % NUM_HOSTS;
-  if (next == src) { return choose_next_host (src); } 
+  if (next == src) { return choose_next_host(src); }
   return next;
 }
 
-void advance_system_time (Event e) {
+void advance_system_time(Event e) {
   double old = g_time;
-  g_time = e.get_time(); 
+  g_time = e.get_time();
   cout << "Advancing time from ";
   cout << old << " to " << g_time << endl;
 }
 
-Event generate_event (char type, double delay, int host_num) {
+Event generate_event(char type, double delay, int host_num) {
   Event e;
   if (type == 'A') {
     e = Event(type, g_time + delay, host_num);
   }
   else if (type == 'T') {
-    e = Event(type, g_time + delay, ((host_num + 1) % NUM_HOSTS) );
+    e = Event(type, g_time + delay, ((host_num + 1) % NUM_HOSTS));
   }
   cout << "New event: " << e.details() << endl;
   return e;
 }
 
-void init (ofstream& fs) {
-  cout << "Initializing" << endl;
+void init(ofstream& fs) {
+  cout << "Define number of events: ";
+  cin >> NUM_EVENTS;
+  cout << "Define number of hosts (max 25): ";
+  cin >> NUM_HOSTS;
+  cout << "Define arrival rate (lambda): ";
+  cin >> LAMBDA;
 
-  g_total_bytes_transmitted = 0, g_total_queuing_delay = 0.0, 
+  cout << "Initializing..." << endl;
+
+  g_total_bytes_transmitted = 0, g_total_queuing_delay = 0.0,
     g_total_transmit_delay = 0.0, g_total_prop_delay = 0.0,
     g_total_pkts_transmitted = 0;
 
@@ -96,8 +103,8 @@ void init (ofstream& fs) {
 
   // first arrival event for each host
   for (int i = 0; i < NUM_HOSTS; i++) {
-    Event a = generate_event('A', negative_exponential(LAMBDA), i); 
-    gel.push(a); 
+    Event a = generate_event('A', negative_exponential(LAMBDA), i);
+    gel.push(a);
   }
 
   // first token event
@@ -109,45 +116,45 @@ void init (ofstream& fs) {
   fs << "lambda,num_hosts,throughput,avg_packet_delay" << endl;
 }
 
-void process_arrival_event (Event a) {
-  advance_system_time(a); 
+void process_arrival_event(Event a) {
+  advance_system_time(a);
   int host_num = a.get_host_num();
   // add packet with random destination host to buffer
   // packet service time is intrinsic service time
   // packet arrival time is time at which packet arrived, g_time
   // packet size is random generated, between 64 and 1518 bytes
   // next host is "randomly" selected, it is any host except itself.
-  Packet packet(negative_exponential(LAMBDA), g_time, generate_packet_size(), 
-    choose_next_host(host_num)); 
+  Packet packet(negative_exponential(LAMBDA), g_time, generate_packet_size(),
+    choose_next_host(host_num));
 
   // add packet to host's buffer
   g_hosts[host_num]->push_packet(packet);
 
   // generate next arrival event
-  Event next_arrival_event = generate_event('A', 
-    negative_exponential(LAMBDA), host_num); 
+  Event next_arrival_event = generate_event('A',
+    negative_exponential(LAMBDA), host_num);
   gel.push(next_arrival_event); // push next arrival for this host
   cout << g_hosts[host_num]->details() << endl;
   cout << "\n";
 }
 
-void process_token_event (Event t) {
-  advance_system_time(t); 
+void process_token_event(Event t) {
+  advance_system_time(t);
   int host_num = t.get_host_num();
   Event next_token_event; // need to determine how much delay
-  
+
   int buffer_size = g_hosts[host_num]->get_size();
   if (buffer_size == 0) {
     cout << "No packets in buffer, passing token" << endl;
 
     // next token event will be g_time + LINK_PROP_DELAY
-    next_token_event = generate_event('T', LINK_PROP_DELAY, host_num); 
+    next_token_event = generate_event('T', LINK_PROP_DELAY, host_num);
     gel.push(next_token_event); // push next token event for this host
   }
   else {
     cout << "Packets in buffer - emptying buffer and passing frame" << endl;
 
-    queue<Packet> buffer_copy = g_hosts[host_num]->get_buffer(); 
+    queue<Packet> buffer_copy = g_hosts[host_num]->get_buffer();
     g_total_pkts_transmitted += buffer_copy.size(); // record number of packets 
 
     int total_packet_bytes = 0;
@@ -158,15 +165,15 @@ void process_token_event (Event t) {
       g_total_bytes_transmitted += packet_size; // needed for stats
       total_packet_bytes += packet_size; // needed to calculate transmit delay
 
-      // record queuing delay
-      g_total_queuing_delay += (g_time - p.get_arrival_time()) * 1000.00; // ms
+                                         // record queuing delay
+      g_total_queuing_delay += (g_time - p.get_arrival_time()); // ms
 
       buffer_copy.pop(); // remove so we can go to next packet in queue
     }
 
     // record total transmission delay
-    g_total_transmit_delay += (NUM_HOSTS * (LINK_PROP_DELAY + 
-        ((total_packet_bytes * 8) / TRANSMIT_RATE) * 1000.0)); // ms
+    g_total_transmit_delay += (NUM_HOSTS * (LINK_PROP_DELAY +
+      ((total_packet_bytes * 8) / TRANSMIT_RATE))); // ms
 
     // record total propagation delay
     g_total_prop_delay += (LINK_PROP_DELAY * NUM_HOSTS) + LINK_PROP_DELAY; // ms
@@ -176,10 +183,10 @@ void process_token_event (Event t) {
     // next token event will be 
     // g_time + LINK_PROP_DELAY + (NUM_HOSTS * (LINK_PROP_DELAY + 
     // ((total_packet_bytes * 8) / TRANSMIT_RATE)) in milliseconds
-    next_token_event = generate_event('T', 
-      LINK_PROP_DELAY + 
-      (NUM_HOSTS * LINK_PROP_DELAY) + 
-      (NUM_HOSTS * ((total_packet_bytes * 8) / TRANSMIT_RATE) / 1000.0), 
+    next_token_event = generate_event('T',
+      LINK_PROP_DELAY +
+      (NUM_HOSTS * LINK_PROP_DELAY) +
+      (NUM_HOSTS * ((total_packet_bytes * 8) / TRANSMIT_RATE)),
       host_num);
 
     gel.push(next_token_event); // push next token event for this host
@@ -247,6 +254,8 @@ int main (int argc, char* argv[]) {
     delete g_hosts[i];
   }
 
+  int p;
+  cin >> p;
   return 0;
 }
 
