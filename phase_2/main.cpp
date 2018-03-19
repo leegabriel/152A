@@ -113,11 +113,12 @@ void process_arrival_event (Event a) {
   advance_system_time(a); 
   int host_num = a.get_host_num();
   // add packet with random destination host to buffer
-  // packet service time is queuing delay
+  // packet service time is intrinsic service time
+  // packet arrival time is time at which packet arrived, g_time
   // packet size is random generated, between 64 and 1518 bytes
   // next host is "randomly" selected, it is any host except itself.
-  Packet packet(negative_exponential(LAMBDA), generate_packet_size(), 
-    choose_next_host(host_num));
+  Packet packet(negative_exponential(LAMBDA), g_time, generate_packet_size(), 
+    choose_next_host(host_num)); 
 
   // add packet to host's buffer
   g_hosts[host_num]->push_packet(packet);
@@ -157,8 +158,8 @@ void process_token_event (Event t) {
       g_total_bytes_transmitted += packet_size; // needed for stats
       total_packet_bytes += packet_size; // needed to calculate transmit delay
 
-      // record total_queuing_delay
-      g_total_queuing_delay += p.get_service_time() * 1000.0; // ms
+      // record queuing delay
+      g_total_queuing_delay += (g_time - p.get_arrival_time()) * 1000.00; // ms
 
       buffer_copy.pop(); // remove so we can go to next packet in queue
     }
@@ -176,8 +177,11 @@ void process_token_event (Event t) {
     // g_time + LINK_PROP_DELAY + (NUM_HOSTS * (LINK_PROP_DELAY + 
     // ((total_packet_bytes * 8) / TRANSMIT_RATE)) in milliseconds
     next_token_event = generate_event('T', 
-      LINK_PROP_DELAY + (NUM_HOSTS * (LINK_PROP_DELAY + 
-        ((total_packet_bytes * 8) / TRANSMIT_RATE) * 1000.0)) , host_num);
+      LINK_PROP_DELAY + 
+      (NUM_HOSTS * LINK_PROP_DELAY) + 
+      (NUM_HOSTS * ((total_packet_bytes * 8) / TRANSMIT_RATE) / 1000.0), 
+      host_num);
+
     gel.push(next_token_event); // push next token event for this host
   }
 
